@@ -27,9 +27,19 @@ jobs:
 
     - name: Setup Gradle
       uses: gradle/gradle-build-action@v2
+      with:
+        gradle-version: wrapper
 
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
+
+    - name: Generate Gradle Wrapper
+      run: |
+        if [ ! -f "gradle/wrapper/gradle-wrapper.jar" ]; then
+          echo "📥 Загружаю gradle-wrapper.jar..."
+          mkdir -p gradle/wrapper
+          curl -L https://raw.githubusercontent.com/gradle/gradle/master/gradle/wrapper/gradle-wrapper.jar -o gradle/wrapper/gradle-wrapper.jar
+        fi
 
     - name: Build Debug APK
       run: ./gradlew assembleDebug --stacktrace
@@ -39,6 +49,7 @@ jobs:
 
     - name: Upload Debug APK to Artifacts
       uses: actions/upload-artifact@v4
+      if: always()
       with:
         name: NavrotVPN-debug
         path: app/build/outputs/apk/debug/*.apk
@@ -46,6 +57,7 @@ jobs:
 
     - name: Upload Release APK to Artifacts
       uses: actions/upload-artifact@v4
+      if: always()
       with:
         name: NavrotVPN-release
         path: app/build/outputs/apk/release/*.apk
@@ -63,11 +75,12 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Build Status Notification
+    - name: Build Status Summary
       if: always()
       run: |
+        echo "## 📱 Build Status Report" >> $GITHUB_STEP_SUMMARY
         if [ "${{ job.status }}" == "success" ]; then
-          echo "✅ Сборка успешна! APK готов в Artifacts"
+          echo "✅ **Сборка успешна!** APK готов в Artifacts" >> $GITHUB_STEP_SUMMARY
         else
-          echo "❌ Сборка не удалась. Проверь логи выше"
+          echo "❌ **Сборка не удалась.** Проверь логи выше" >> $GITHUB_STEP_SUMMARY
         fi
