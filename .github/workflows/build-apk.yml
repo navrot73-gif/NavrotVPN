@@ -28,24 +28,13 @@ jobs:
     - name: Setup Gradle
       uses: gradle/gradle-build-action@v2
       with:
-        gradle-version: wrapper
-
-    - name: Grant execute permission for gradlew
-      run: chmod +x gradlew
-
-    - name: Generate Gradle Wrapper
-      run: |
-        if [ ! -f "gradle/wrapper/gradle-wrapper.jar" ]; then
-          echo "📥 Загружаю gradle-wrapper.jar..."
-          mkdir -p gradle/wrapper
-          curl -L https://raw.githubusercontent.com/gradle/gradle/master/gradle/wrapper/gradle-wrapper.jar -o gradle/wrapper/gradle-wrapper.jar
-        fi
+        gradle-version: '8.5'
 
     - name: Build Debug APK
-      run: ./gradlew assembleDebug --stacktrace
+      run: gradle assembleDebug --stacktrace
 
     - name: Build Release APK
-      run: ./gradlew assembleRelease --stacktrace
+      run: gradle assembleRelease --stacktrace
 
     - name: Upload Debug APK to Artifacts
       uses: actions/upload-artifact@v4
