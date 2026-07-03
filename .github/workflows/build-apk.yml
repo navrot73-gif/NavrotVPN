@@ -16,7 +16,15 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Debug repo contents
+  run: |
+    echo "Current directory: $(pwd)"
+    echo "Listing all files:"
+    ls -la
+    echo "Checking for app folder:"
+    ls -la app || echo "❌ app folder NOT FOUND"
+    echo "Checking settings.gradle:"
+    cat settings.gradle || echo "❌ settings.gradle NOT FOUND"
 
     - name: Set up JDK 17
       uses: actions/setup-java@v4
