@@ -1,0 +1,19 @@
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.2.2'
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.22"
+    }
+}
+
+// Убран конфликтующий блок allprojects { repositories {…} } —
+// репозитории уже заданы в settings.gradle через dependencyResolutionManagement.
+// Дублирование вызывало предупреждение "Repositories declared in allprojects
+// will be ignored" и потенциальные конфликты разрешения зависимостей.
+
+task clean(type: Delete) {
+    delete rootProject.buildDir
+}
