@@ -1,0 +1,24 @@
+# Gradle/Android ignores
+.gradle/
+build/
+local.properties
+/.idea/
+*.iml
+
+# Ignore artifacts and duplicates with (1) produced by some file managers
+* (1).* 
+NavrotVPN (1).zip
+*.zip
+
+# Android specific
+/app/build/
+/**/*.keystore
+
+# AARs and local libs
+app/libs/*.aar
+
+# Kotlin/Java
+*.class
+
+# Logs
+*.log
