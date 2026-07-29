@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.asStateFlow
  * - Устранён memory leak: статический callback заменён на WeakReference
  * - Добавлено логирование
  * - Безопасный вызов stopService
+ * - Добавлена проверка на наличие libv2ray перед запуском сервиса для предотвращения ClassNotFoundException
  */
 object XrayManager : TunnelProtocolHandler {
 
@@ -39,6 +40,16 @@ object XrayManager : TunnelProtocolHandler {
         _state.value = ConnectionState.CONNECTING
         currentServer = server
         appContext = context.applicationContext
+
+        // Проверка наличия библиотеки libv2ray в рантайме
+        try {
+            Class.forName("libv2ray.CoreController")
+        } catch (e: ClassNotFoundException) {
+            _state.value = ConnectionState.ERROR
+            Log.e(TAG, "Ошибка: Библиотека libv2ray.aar не найдена в рантайме. Сборка xray невозможна.", e)
+            return
+        }
+
         try {
             val configJson = XrayConfigBuilder.build(server)
             val intent = Intent(context, V2RayVpnService::class.java)

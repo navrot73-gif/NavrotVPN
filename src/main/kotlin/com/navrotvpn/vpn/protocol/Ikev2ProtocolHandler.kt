@@ -1,6 +1,7 @@
 package com.navrotvpn.vpn.protocol
 
 import android.content.Context
+import android.util.Log
 import com.navrotvpn.core.ConnectionState
 import com.navrotvpn.network.ServerModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,15 +21,13 @@ import kotlinx.coroutines.flow.asStateFlow
  * Для проекта с minSdk 24 более реалистичный путь — (1).
  */
 class Ikev2ProtocolHandler : TunnelProtocolHandler {
+    private val TAG = "Ikev2Handler"
     private val _state = MutableStateFlow(ConnectionState.DISCONNECTED)
     override val state: StateFlow<ConnectionState> = _state.asStateFlow()
 
     override suspend fun connect(context: Context, server: ServerModel) {
         _state.value = ConnectionState.ERROR
-        throw NotImplementedError(
-            "IKEv2 ещё не подключён — требует strongSwan-модуль (NDK) либо " +
-                "Android 11+ Ikev2VpnProfile. См. Ikev2ProtocolHandler.kt."
-        )
+        Log.e(TAG, "IKEv2 еще не подключен в данной версии приложения. Требуется strongSwan-модуль (NDK) или Ikev2VpnProfile.")
     }
 
     override suspend fun disconnect() {

@@ -1,6 +1,7 @@
 package com.navrotvpn.vpn.protocol
 
 import android.content.Context
+import android.util.Log
 import com.navrotvpn.core.ConnectionState
 import com.navrotvpn.network.ServerModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,15 +18,13 @@ import kotlinx.coroutines.flow.asStateFlow
  * артефакта в открытом доступе нет — только сборка из исходников.
  */
 class Hysteria2ProtocolHandler : TunnelProtocolHandler {
+    private val TAG = "Hysteria2Handler"
     private val _state = MutableStateFlow(ConnectionState.DISCONNECTED)
     override val state: StateFlow<ConnectionState> = _state.asStateFlow()
 
     override suspend fun connect(context: Context, server: ServerModel) {
         _state.value = ConnectionState.ERROR
-        throw NotImplementedError(
-            "Hysteria2 ещё не подключён — требует сборки hysteria-core под " +
-                "Android через gomobile. См. комментарий в Hysteria2ProtocolHandler.kt."
-        )
+        Log.e(TAG, "Hysteria2 еще не подключен в данной версии приложения. Требуется сборка hysteria-core под Android через gomobile.")
     }
 
     override suspend fun disconnect() {

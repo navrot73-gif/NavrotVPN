@@ -5,17 +5,18 @@ buildscript {
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:8.5.2'
-        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.20'
+        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:2.0.0'
     }
 }
 
 plugins {
-    id 'com.android.application' version '8.5.0'
+    id 'com.android.application' version '8.5.2'
+    id 'org.jetbrains.kotlin.android' version '2.0.0'
 }
 
 android {
     namespace 'com.navrotvpn'
-    compileSdk 34
+    compileSdk 35
 
     defaultConfig {
         applicationId 'com.navrotvpn'
@@ -25,6 +26,10 @@ android {
         versionName '1.0.0'
 
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
+    }
+
+    buildFeatures {
+        viewBinding true
     }
 
     buildTypes {
@@ -50,10 +55,15 @@ android {
     sourceSets {
         main {
             manifest.srcFile 'AndroidManifest.xml'
-            java.srcDirs = ['']
-            kotlin.srcDirs = ['']
+            java.srcDirs = ['src/main/kotlin']
+            kotlin.srcDirs = ['src/main/kotlin']
             res.srcDirs = ['res']
             assets.srcDirs = ['assets']
+
+            if (!file('app/libs/libv2ray.aar').exists() && !file('libs/libv2ray.aar').exists()) {
+                java.srcDirs += 'src/stub/kotlin'
+                kotlin.srcDirs += 'src/stub/kotlin'
+            }
         }
     }
 }
@@ -62,20 +72,21 @@ dependencies {
     // Android Framework
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'androidx.core:core:1.12.0'
+    implementation 'androidx.activity:activity-ktx:1.8.2'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.2'
     implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.6.2'
 
     // Kotlin
-    implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.9.23'
+    implementation 'org.jetbrains.kotlin:kotlin-stdlib:2.0.0'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'
 
     // Material Design
     implementation 'com.google.android.material:material:1.10.0'
 
     // VPN Libraries
-    implementation 'com.wireguard.android:tunnel:1.0.23'
-    implementation 'com.zaneschepke:amneziawg-android:0.1.0'
+    implementation 'com.wireguard.android:tunnel:1.0.20230706'
+    implementation 'com.zaneschepke:amneziawg-android:1.3.0'
 
     // Network & HTTP
     implementation 'com.squareup.okhttp3:okhttp:4.11.0'
@@ -94,18 +105,4 @@ dependencies {
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
-}
-
-tasks.register('assembleDebug') {
-    dependsOn 'assemble'
-    doLast {
-        println '✅ Debug APK построена'
-    }
-}
-
-tasks.register('assembleRelease') {
-    dependsOn 'assemble'
-    doLast {
-        println '✅ Release APK построена'
-    }
 }

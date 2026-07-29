@@ -15,7 +15,7 @@
         android:allowBackup="false"
         android:fullBackupContent="false"
         android:label="@string/app_name"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@android:drawable/sym_def_app_icon"
         android:theme="@style/Theme.NavrotVpn"
         android:networkSecurityConfig="@xml/network_security_config">
 
@@ -33,33 +33,39 @@
             android:name=".vpn.VpnServiceImpl"
             android:permission="android.permission.BIND_VPN_SERVICE"
             android:foregroundServiceType="specialUse"
-            android:supportsAlwaysOn="true"
             android:exported="false">
             <intent-filter>
                 <action android:name="android.net.VpnService"/>
             </intent-filter>
+            <meta-data
+                android:name="android.net.VpnService.SUPPORTS_ALWAYS_ON"
+                android:value="true"/>
         </service>
 
         <service
             android:name=".vpn.AmneziaVpnServiceImpl"
             android:permission="android.permission.BIND_VPN_SERVICE"
             android:foregroundServiceType="specialUse"
-            android:supportsAlwaysOn="true"
             android:exported="false">
             <intent-filter>
                 <action android:name="android.net.VpnService"/>
             </intent-filter>
+            <meta-data
+                android:name="android.net.VpnService.SUPPORTS_ALWAYS_ON"
+                android:value="true"/>
         </service>
 
         <service
             android:name=".vpn.xray.V2RayVpnService"
             android:permission="android.permission.BIND_VPN_SERVICE"
             android:foregroundServiceType="specialUse"
-            android:supportsAlwaysOn="true"
             android:exported="false">
             <intent-filter>
                 <action android:name="android.net.VpnService"/>
             </intent-filter>
+            <meta-data
+                android:name="android.net.VpnService.SUPPORTS_ALWAYS_ON"
+                android:value="true"/>
         </service>
 
         <!-- BootReceiver: exported=true обязательно для системного BOOT_COMPLETED,

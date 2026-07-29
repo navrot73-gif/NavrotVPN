@@ -1,6 +1,7 @@
 package com.navrotvpn.vpn.protocol
 
 import android.content.Context
+import android.util.Log
 import com.navrotvpn.core.ConnectionState
 import com.navrotvpn.network.ServerModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,15 +20,13 @@ import kotlinx.coroutines.flow.asStateFlow
  * `implementation` тут, увы, нет.
  */
 class OpenVpnProtocolHandler : TunnelProtocolHandler {
+    private val TAG = "OpenVpnHandler"
     private val _state = MutableStateFlow(ConnectionState.DISCONNECTED)
     override val state: StateFlow<ConnectionState> = _state.asStateFlow()
 
     override suspend fun connect(context: Context, server: ServerModel) {
         _state.value = ConnectionState.ERROR
-        throw NotImplementedError(
-            "OpenVPN ещё не подключён — требует встраивания :openvpn-модуля " +
-                "из ics-openvpn (NDK). См. комментарий в OpenVpnProtocolHandler.kt."
-        )
+        Log.e(TAG, "OpenVPN еще не подключен в данной версии приложения. Требуется встраивание :openvpn-модуля из ics-openvpn.")
     }
 
     override suspend fun disconnect() {

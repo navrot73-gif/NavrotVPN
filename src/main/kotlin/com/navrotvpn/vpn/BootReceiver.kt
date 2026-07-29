@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.util.Log
-import androidx.preference.PreferenceManager
 
 /**
  * Заготовка под автозапуск VPN после перезагрузки.
@@ -33,7 +32,7 @@ class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != Intent.ACTION_BOOT_COMPLETED) return
 
-        val prefs = PreferenceManager.getDefaultSharedPreferences(context)
+        val prefs = context.getSharedPreferences(context.packageName + "_preferences", Context.MODE_PRIVATE)
         val autoConnect = prefs.getBoolean(PREF_AUTO_CONNECT, false)
         if (!autoConnect) {
             Log.d(TAG, "Автоподключение при загрузке отключено")

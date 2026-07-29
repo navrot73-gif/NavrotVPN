@@ -46,47 +46,56 @@ object AmneziaWgManager : TunnelProtocolHandler {
         if (initialized) return
         synchronized(this) {
             if (initialized) return
-            backend = AwgGoBackend(context.applicationContext)
+            backend = AwgGoBackend(context.applicationContext, object : org.amnezia.awg.backend.TunnelActionHandler {
+                override fun runPreUp(allowedIps: Collection<String>) {}
+                override fun runPostUp(allowedIps: Collection<String>) {}
+                override fun runPreDown(allowedIps: Collection<String>) {}
+                override fun runPostDown(allowedIps: Collection<String>) {}
+            })
             initialized = true
             Log.d(TAG, "AmneziaWG GoBackend инициализирован")
         }
     }
 
-    override suspend fun connect(context: Context, server: ServerModel) = withContext(Dispatchers.IO) {
-        init(context)
-        val b = backend ?: throw IllegalStateException("AmneziaWG backend не инициализирован")
+    override suspend fun connect(context: Context, server: ServerModel) {
+        withContext(Dispatchers.IO) {
+            init(context)
+            val b = backend ?: throw IllegalStateException("AmneziaWG backend не инициализирован")
 
-        _state.value = ConnectionState.CONNECTING
-        try {
-            val config = buildAwgConfig(context, server)
-            val t = tunnel ?: AwgWgTunnelAdapter(TUNNEL_NAME) { newState ->
-                _state.value = when (newState) {
-                    AwgTunnel.State.UP -> ConnectionState.CONNECTED
-                    AwgTunnel.State.DOWN -> ConnectionState.DISCONNECTED
-                    else -> ConnectionState.CONNECTING
-                }
-            }.also { tunnel = it }
+            _state.value = ConnectionState.CONNECTING
+            try {
+                val config = buildAwgConfig(context, server)
+                val t = tunnel ?: AwgWgTunnelAdapter(TUNNEL_NAME) { newState ->
+                    _state.value = when (newState) {
+                        AwgTunnel.State.UP -> ConnectionState.CONNECTED
+                        AwgTunnel.State.DOWN -> ConnectionState.DISCONNECTED
+                        else -> ConnectionState.CONNECTING
+                    }
+                }.also { tunnel = it }
 
-            b.setState(t, AwgTunnel.State.UP, config)
-            currentServer = server
-            Log.d(TAG, "AmneziaWG туннель запущен: ${server.name}")
-        } catch (e: Exception) {
-            _state.value = ConnectionState.ERROR
-            Log.e(TAG, "Ошибка подключения AmneziaWG", e)
-            throw e
+                b.setState(t, AwgTunnel.State.UP, config)
+                currentServer = server
+                Log.d(TAG, "AmneziaWG туннель запущен: ${server.name}")
+            } catch (e: Exception) {
+                _state.value = ConnectionState.ERROR
+                Log.e(TAG, "Ошибка подключения AmneziaWG", e)
+                throw e
+            }
         }
     }
 
-    override suspend fun disconnect() = withContext(Dispatchers.IO) {
-        val t = tunnel ?: return@withContext
-        val b = backend ?: return@withContext
-        try {
-            b.setState(t, AwgTunnel.State.DOWN, null)
-            Log.d(TAG, "AmneziaWG туннель остановлен")
-        } catch (e: Exception) {
-            Log.w(TAG, "Ошибка при остановке AmneziaWG", e)
-        } finally {
-            _state.value = ConnectionState.DISCONNECTED
+    override suspend fun disconnect() {
+        withContext(Dispatchers.IO) {
+            val t = tunnel ?: return@withContext
+            val b = backend ?: return@withContext
+            try {
+                b.setState(t, AwgTunnel.State.DOWN, null)
+                Log.d(TAG, "AmneziaWG туннель остановлен")
+            } catch (e: Exception) {
+                Log.w(TAG, "Ошибка при остановке AmneziaWG", e)
+            } finally {
+                _state.value = ConnectionState.DISCONNECTED
+            }
         }
     }
 
@@ -111,7 +120,7 @@ object AmneziaWgManager : TunnelProtocolHandler {
         val ifaceBuilder = AwgInterface.Builder()
             .setKeyPair(
                 org.amnezia.awg.crypto.KeyPair(
-                    org.amnezia.awg.crypto.PrivateKey.fromBase64(keyPair.privateKey.toBase64())
+                    org.amnezia.awg.crypto.Key.fromBase64(keyPair.privateKey.toBase64())
                 )
             )
             .parseAddresses(server.clientAddress)
@@ -151,6 +160,7 @@ object AmneziaWgManager : TunnelProtocolHandler {
         private val onStateChanged: (AwgTunnel.State) -> Unit
     ) : AwgTunnel {
         override fun getName(): String = tunnelName
+        override fun isIpv4ResolutionPreferred(): Boolean = false
         override fun onStateChange(newState: AwgTunnel.State) = onStateChanged(newState)
     }
 }

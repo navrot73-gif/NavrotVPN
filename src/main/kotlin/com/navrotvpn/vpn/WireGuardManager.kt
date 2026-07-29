@@ -48,43 +48,47 @@ object WireGuardManager : TunnelProtocolHandler {
         }
     }
 
-    override suspend fun connect(context: Context, server: ServerModel) = withContext(Dispatchers.IO) {
-        init(context)
-        val b = backend ?: throw IllegalStateException("WireGuard backend не инициализирован")
+    override suspend fun connect(context: Context, server: ServerModel) {
+        withContext(Dispatchers.IO) {
+            init(context)
+            val b = backend ?: throw IllegalStateException("WireGuard backend не инициализирован")
 
-        _state.value = ConnectionState.CONNECTING
-        try {
-            val config = ConfigManager.buildConfig(context, server)
-            val t = tunnel ?: WgTunnel(TUNNEL_NAME) { wgState ->
-                // Единое место обновления состояния — через callback от GoBackend
-                _state.value = when (wgState) {
-                    Tunnel.State.UP -> ConnectionState.CONNECTED
-                    Tunnel.State.DOWN -> ConnectionState.DISCONNECTED
-                    else -> ConnectionState.CONNECTING
-                }
-            }.also { tunnel = it }
+            _state.value = ConnectionState.CONNECTING
+            try {
+                val config = ConfigManager.buildConfig(context, server)
+                val t = tunnel ?: WgTunnel(TUNNEL_NAME) { wgState ->
+                    // Единое место обновления состояния — через callback от GoBackend
+                    _state.value = when (wgState) {
+                        Tunnel.State.UP -> ConnectionState.CONNECTED
+                        Tunnel.State.DOWN -> ConnectionState.DISCONNECTED
+                        else -> ConnectionState.CONNECTING
+                    }
+                }.also { tunnel = it }
 
-            b.setState(t, Tunnel.State.UP, config)
-            currentServer = server
-            // НЕ устанавливаем CONNECTED вручную — это делает callback выше
-            Log.d(TAG, "WireGuard туннель запущен: ${server.name}")
-        } catch (e: Exception) {
-            _state.value = ConnectionState.ERROR
-            Log.e(TAG, "Ошибка подключения WireGuard", e)
-            throw e
+                b.setState(t, Tunnel.State.UP, config)
+                currentServer = server
+                // НЕ устанавливаем CONNECTED вручную — это делает callback выше
+                Log.d(TAG, "WireGuard туннель запущен: ${server.name}")
+            } catch (e: Exception) {
+                _state.value = ConnectionState.ERROR
+                Log.e(TAG, "Ошибка подключения WireGuard", e)
+                throw e
+            }
         }
     }
 
-    override suspend fun disconnect() = withContext(Dispatchers.IO) {
-        val t = tunnel ?: return@withContext
-        val b = backend ?: return@withContext
-        try {
-            b.setState(t, Tunnel.State.DOWN, null)
-            Log.d(TAG, "WireGuard туннель остановлен")
-        } catch (e: Exception) {
-            Log.w(TAG, "Ошибка при остановке WireGuard", e)
-        } finally {
-            _state.value = ConnectionState.DISCONNECTED
+    override suspend fun disconnect() {
+        withContext(Dispatchers.IO) {
+            val t = tunnel ?: return@withContext
+            val b = backend ?: return@withContext
+            try {
+                b.setState(t, Tunnel.State.DOWN, null)
+                Log.d(TAG, "WireGuard туннель остановлен")
+            } catch (e: Exception) {
+                Log.w(TAG, "Ошибка при остановке WireGuard", e)
+            } finally {
+                _state.value = ConnectionState.DISCONNECTED
+            }
         }
     }
 

@@ -4,7 +4,7 @@ import android.content.Context
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import com.wireguard.crypto.KeyPair
-import com.wireguard.crypto.PrivateKey
+import com.wireguard.crypto.Key
 
 /**
  * Генерирует пару ключей Curve25519 прямо на устройстве и хранит приватный
@@ -34,7 +34,7 @@ object KeyManager {
         val store = prefs(context)
         val stored = store.getString(KEY_PRIVATE, null)
         if (stored != null) {
-            return KeyPair(PrivateKey.fromBase64(stored))
+            return KeyPair(Key.fromBase64(stored))
         }
         val fresh = KeyPair()
         store.edit().putString(KEY_PRIVATE, fresh.privateKey.toBase64()).apply()

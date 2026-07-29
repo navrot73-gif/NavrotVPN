@@ -1,6 +1,7 @@
 package com.navrotvpn.vpn.protocol
 
 import android.content.Context
+import android.util.Log
 import com.navrotvpn.core.ConnectionState
 import com.navrotvpn.network.ServerModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -37,16 +38,13 @@ import kotlinx.coroutines.flow.asStateFlow
  */
 class ShadowsocksProtocolHandler : TunnelProtocolHandler {
 
+    private val TAG = "SSProtocolHandler"
     private val _state = MutableStateFlow(ConnectionState.DISCONNECTED)
     override val state: StateFlow<ConnectionState> = _state.asStateFlow()
 
     override suspend fun connect(context: Context, server: ServerModel) {
         _state.value = ConnectionState.ERROR
-        throw NotImplementedError(
-            "Shadowsocks ещё не подключён. См. комментарий в " +
-                "ShadowsocksProtocolHandler.kt — нужен либо AIDL-бридж к " +
-                "официальному приложению, либо форк shadowsocks-rust core."
-        )
+        Log.e(TAG, "Shadowsocks еще не подключен в данной версии приложения. Требуется NDK-модуль или AIDL-мост.")
     }
 
     override suspend fun disconnect() {
