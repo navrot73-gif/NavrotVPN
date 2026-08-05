@@ -64,7 +64,7 @@ jobs:
             exit 1
           fi
 
-      - name: 📝 Python-скрипт для выполнения перемещений
+        - name: 📝 Python-скрипт для выполнения перемещений
         id: move_files
         run: |
           python << EOF
@@ -73,14 +73,60 @@ jobs:
           import shutil
           import re
 
-          # Читаем план
+          # Читаем сырой ответ DeepSeek (для отладки)
           with open('plan.json', 'r') as f:
-              plan = json.load(f)
+              raw = f.read()
+              print("=== Сырой ответ DeepSeek ===")
+              print(raw)
+              print("==============================")
 
-          moves = plan.get('moves', [])
-          if not moves:
-              print("Нет перемещений для выполнения")
+          # Пытаемся распарсить JSON
+          try:
+              data = json.loads(raw)
+          except json.JSONDecodeError as e:
+              print(f"Ошибка парсинга JSON: {e}")
+              # Если не JSON, может быть просто текст с пояснениями — попробуем извлечь JSON из текста
+              import re
+              match = re.search(r'\{.*\}', raw, re.DOTALL)
+              if match:
+                  json_str = match.group()
+                  print(f"Извлечён JSON из текста: {json_str}")
+                  data = json.loads(json_str)
+              else:
+                  print("Не удалось найти JSON в ответе. Завершаем.")
+                  exit(0)
+
+          # Проверяем, что data — словарь
+          if not isinstance(data, dict):
+              print(f"Ответ не является словарём, это {type(data)}. Завершаем.")
               exit(0)
+
+          # Проверяем наличие поля "moves"
+          moves = data.get('moves')
+          if moves is None:
+              print("Поле 'moves' отсутствует или равно null. Ищем другие ключи...")
+              # Возможно, ответ пришёл в другом формате, например, просто список
+              if isinstance(data, list):
+                  # Преобразуем список в формат moves (предположим, каждый элемент - {src, dst})
+                  new_moves = []
+                  for item in data:
+                      if isinstance(item, dict) and 'src' in item and 'dst' in item:
+                          new_moves.append(item)
+                  if new_moves:
+                      moves = new_moves
+                      print("Сформирован moves из списка.")
+                  else:
+                      print("Не удалось извлечь перемещения. Завершаем.")
+                      exit(0)
+              else:
+                  print("Неизвестный формат. Завершаем.")
+                  exit(0)
+
+          if not moves:
+              print("Нет перемещений для выполнения.")
+              exit(0)
+
+          print(f"Найдено {len(moves)} перемещений.")
 
           # Выполняем перемещения
           for item in moves:
@@ -88,6 +134,7 @@ jobs:
               dst = item.get('dst')
               new_pkg = item.get('new_package')
               if not src or not dst:
+                  print(f"Пропускаем неполный элемент: {item}")
                   continue
               # Создаём папку назначения
               os.makedirs(os.path.dirname(dst), exist_ok=True)
@@ -96,15 +143,15 @@ jobs:
               print(f"Перемещён: {src} -> {dst}")
               # Если нужно обновить package-декларацию
               if new_pkg and os.path.exists(dst):
-                  with open(dst, 'r') as f:
+                  with open(dst, 'r', encoding='utf-8') as f:
                       content = f.read()
                   # Заменяем package строку
                   content = re.sub(r'^package\s+[\w.]+', f'package {new_pkg}', content, flags=re.MULTILINE)
-                  with open(dst, 'w') as f:
+                  with open(dst, 'w', encoding='utf-8') as f:
                       f.write(content)
                   print(f"Обновлён package в {dst} -> {new_pkg}")
 
-          print("Все перемещения выполнены")
+          print("Все перемещения выполнены.")
           EOF
 
       - name: 📦 Создать Pull Request с изменениями
