@@ -1,0 +1,42 @@
+name: 🤖 AI-агент cc-fleet (DeepSeek)
+
+on:
+  workflow_dispatch:  # 👈 Это значит, что вы запускаете вручную, нажав кнопку
+    inputs:
+      task:
+        description: 'Что нужно сделать?'
+        required: true
+        default: 'Привести структуру проекта к стандартам Android'
+      branch:
+        description: 'Ветка для изменений'
+        required: true
+        default: 'main'
+
+jobs:
+  agent:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. Клонируем ваш репозиторий
+      - name: 📥 Скачать код
+        uses: actions/checkout@v4
+
+      # 2. Устанавливаем Node.js (нужен для cc-fleet)
+      - name: ⚙️ Установить Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # 3. Устанавливаем cc-fleet
+      - name: 🔧 Установить cc-fleet
+        run: |
+          npm install -g cc-fleet
+
+      # 4. Добавляем провайдера DeepSeek
+      - name: 🔑 Добавить DeepSeek API
+        run: |
+          ccf provider add deepseek --api-key ${{ secrets.DEEPSEEK_API_KEY }} --base-url https://api.deepseek.com
+
+      # 5. Запускаем агента с вашим заданием
+      - name: 🚀 Запустить агента
+        run: |
+          ccf run deepseek --task "${{ github.event.inputs.task }}" --branch "${{ github.event.inputs.branch }}" --create-pr
