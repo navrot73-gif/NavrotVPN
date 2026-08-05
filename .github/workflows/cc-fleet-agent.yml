@@ -1,42 +1,67 @@
-name: 🤖 AI-агент cc-fleet (DeepSeek)
+name: 🤖 DeepSeek Restructure
 
 on:
-  workflow_dispatch:  # 👈 Это значит, что вы запускаете вручную, нажав кнопку
+  workflow_dispatch:
     inputs:
       task:
         description: 'Что нужно сделать?'
         required: true
-        default: 'Привести структуру проекта к стандартам Android'
+        default: 'Реструктурируй проект согласно стандартам Android'
       branch:
         description: 'Ветка для изменений'
         required: true
         default: 'main'
 
 jobs:
-  agent:
+  restructure:
     runs-on: ubuntu-latest
     steps:
-      # 1. Клонируем ваш репозиторий
       - name: 📥 Скачать код
         uses: actions/checkout@v4
 
-      # 2. Устанавливаем Node.js (нужен для cc-fleet)
-      - name: ⚙️ Установить Node.js
-        uses: actions/setup-node@v4
+      - name: 🐍 Установить Python
+        uses: actions/setup-python@v5
         with:
-          node-version: '20'
+          python-version: '3.10'
 
-      # 3. Устанавливаем cc-fleet
-      - name: 🔧 Установить cc-fleet
-        run: |
-          npm install -g cc-fleet
+      - name: 📦 Установить PyGithub
+        run: pip install PyGithub
 
-      # 4. Добавляем провайдера DeepSeek
-      - name: 🔑 Добавить DeepSeek API
+      - name: 🤖 Запрос к DeepSeek на составление плана
+        id: deepseek
+        env:
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
         run: |
-          ccf provider add deepseek --api-key ${{ secrets.DEEPSEEK_API_KEY }} --base-url https://api.deepseek.com
+          # Собираем список всех .kt файлов
+          find . -name '*.kt' > files_list.txt
+          # Формируем промпт для DeepSeek
+          PROMPT="Ты — эксперт по Android-разработке. Напиши bash-скрипт, который переместит все .kt файлы из корня в стандартную структуру Android-проекта: app/src/main/java/com/navrot/vpn/ui/, /viewmodel/, /vpn/, /config/, /crypto/, /utils/. Распредели файлы по смыслу. Также в скрипте обнови package-декларации в каждом файле. Ответь только текстом скрипта, без пояснений."
+          # Отправляем запрос в DeepSeek
+          RESPONSE=$(curl -s https://api.deepseek.com/chat/completions \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer $DEEPSEEK_API_KEY" \
+            -d "{
+              \"model\": \"deepseek-chat\",
+              \"messages\": [
+                {\"role\": \"system\", \"content\": \"$PROMPT\"},
+                {\"role\": \"user\", \"content\": \"Вот список файлов: $(cat files_list.txt)\"}
+              ],
+              \"temperature\": 0.2
+            }")
+          # Извлекаем текст скрипта из ответа
+          SCRIPT=$(echo $RESPONSE | jq -r '.choices[0].message.content')
+          echo "$SCRIPT" > move_script.sh
+          chmod +x move_script.sh
 
-      # 5. Запускаем агента с вашим заданием
-      - name: 🚀 Запустить агента
-        run: |
-          ccf run deepseek --task "${{ github.event.inputs.task }}" --branch "${{ github.event.inputs.branch }}" --create-pr
+      - name: 🔄 Выполнить перемещение файлов
+        run: ./move_script.sh
+
+      - name: 📦 Создать Pull Request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "Автоматическая реструктуризация от DeepSeek"
+          branch: deepseek-restructure-${{ github.run_id }}
+          title: "🤖 Реструктуризация проекта"
+          body: "Изменения по запросу: ${{ github.event.inputs.task }}"
+          base: ${{ github.event.inputs.branch }}
